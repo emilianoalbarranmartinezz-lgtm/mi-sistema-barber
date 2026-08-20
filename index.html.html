@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Barbería - Sistema de Gestión</title>
+<style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background:#f4f4f9; padding:20px; }
+    .container { max-width:1400px; margin:0 auto; }
+    h1 { color:#2c3e50; border-bottom:3px solid #3498db; padding-bottom:10px; margin-bottom:20px; }
+
+    .tabs { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
+    .tab { padding:10px 20px; background:#ecf0f1; border:none; border-radius:5px; cursor:pointer; font-weight:600; transition:background .3s; }
+    .tab.active { background:#3498db; color:#fff; }
+    .tab:hover { background:#bdc3c7; }
+    .tab.active:hover { background:#2980b9; }
+
+    .tab-content { display:none; }
+    .tab-content.active { display:block; }
+
+    .dashboard { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px; }
+    .card { background:#fff; border-radius:10px; padding:20px; box-shadow:0 2px 10px rgba(0,0,0,.1); }
+    .card h2 { color:#2c3e50; font-size:18px; margin-bottom:15px; border-bottom:2px solid #ecf0f1; padding-bottom:10px; }
+
+    .barber-list, .waiting-list { display:flex; flex-direction:column; gap:10px; }
+
+    .barber-item { background:#f8f9fa; padding:12px; border-radius:8px; border-left:4px solid #2ecc71; }
+    .barber-item.busy { border-left-color:#e74c3c; background:#fdf2f2; }
+    .barber-item.pending { border-left-color:#f39c12; background:#fff8ec; }
+
+    .barber-top { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+    .barber-name-group { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .barber-name-group input { padding:4px 8px; border:1px solid #bbb; border-radius:4px; font-size:14px; width:140px; }
+    .icon-btn { background:none; border:none; cursor:pointer; font-size:14px; padding:2px 4px; color:#7f8c8d; }
+    .icon-btn:hover { color:#2c3e50; }
+
+    .status { font-size:12px; padding:3px 10px; border-radius:20px; background:#2ecc71; color:#fff; white-space:nowrap; }
+    .barber-item.busy .status { background:#e74c3c; }
+    .barber-item.pending .status { background:#f39c12; }
+
+    .btn { background:#3498db; color:#fff; border:none; padding:8px 16px; border-radius:5px; cursor:pointer; font-size:14px; transition:background .3s; }
+    .btn:hover { background:#2980b9; }
+    .btn:disabled { background:#bdc3c7; cursor:not-allowed; }
+    .btn-success { background:#2ecc71; }
+    .btn-success:hover { background:#27ae60; }
+    .btn-danger { background:#e74c3c; }
+    .btn-danger:hover { background:#c0392b; }
+    .btn-warning { background:#f39c12; }
+    .btn-warning:hover { background:#e67e22; }
+    .btn-sm { padding:5px 10px; font-size:12px; }
+
+    .cliente-item { background:#f8f9fa; padding:10px; border-radius:5px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
+
+    .pending-box { margin-top:10px; padding-top:10px; border-top:1px dashed #ddd; }
+    .pending-line { display:flex; justify-content:space-between; font-size:13px; padding:3px 0; color:#2c3e50; }
+    .pending-total { font-weight:700; border-top:1px solid #ecf0f1; margin-top:6px; padding-top:6px; }
+
+    .add-product-row { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; align-items:center; }
+    .add-product-row select { flex:1; min-width:140px; padding:6px; border:1px solid #ddd; border-radius:5px; }
+    .add-product-row input { width:60px; padding:6px; border:1px solid #ddd; border-radius:5px; }
+
+    .action-row { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+
+    .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; }
+    .report-card { background:#fff; border-radius:10px; padding:20px; box-shadow:0 2px 10px rgba(0,0,0,.1); }
+    .report-card h3 { color:#2c3e50; margin-bottom:10px; }
+    .report-item { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #ecf0f1; font-size:14px; }
+
+    .product-item { 
+        display:flex; 
+        justify-content:space-between; 
+        align-items:center; 
+        padding:10px 0; 
+        border-bottom:1px solid #ecf0f1; 
+        flex-wrap:wrap;
+        gap:8px;
+    }
+    .product-item .stock { font-weight:700; color:#2c3e50; }
+    .product-item .stock.low { color:#e74c3c; }
+    .product-controls { 
+        display:flex; 
+        gap:8px; 
+        align-items:center;
+        flex-wrap:wrap;
+    }
+    .product-controls input { 
+        width:70px; 
+        padding:4px 6px; 
+        border:1px solid #ddd; 
+        border-radius:4px; 
+        font-size:13px; 
+    }
+    .product-controls .btn { padding:4px 10px; font-size:12px; }
+
+    .history-item { background:#f8f9fa; padding:12px; border-radius:5px; margin-bottom:8px; border-left:3px solid #3498db; font-size:13px; }
+    .empty-msg { color:#7f8c8d; font-size:14px; }
+
+    .confirm-box { margin-top:8px; padding:10px; background:#fdf2f2; border:1px solid #f5c6cb; border-radius:6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:13px; color:#842029; }
+
+    #toastContainer { position:fixed; bottom:20px; right:20px; display:flex; flex-direction:column; gap:8px; z-index:1000; max-width:320px; }
+    .toast { padding:12px 16px; border-radius:8px; color:#fff; font-size:14px; box-shadow:0 4px 12px rgba(0,0,0,.15); animation:slideIn .2s ease-out; }
+    .toast.info { background:#3498db; }
+    .toast.success { background:#2ecc71; }
+    .toast.error { background:#e74c3c; }
+    .toast.warning { background:#f39c12; }
+    @keyframes slideIn { from { transform:translateX(30px); opacity:0; } to { transform:translateX(0); opacity:1; } }
+
+    .service-config { 
+        display:flex; 
+        gap:15px; 
+        align-items:center; 
+        flex-wrap:wrap; 
+        margin-bottom:15px; 
+        padding:15px; 
+        background:#f8f9fa; 
+        border-radius:8px; 
+        border-left:4px solid #3498db;
+    }
+    .service-config label { font-weight:600; color:#2c3e50; }
+    .service-config input { width:100px; padding:6px; border:1px solid #ddd; border-radius:5px; font-size:14px; }
+
+    .product-management { 
+        margin-bottom:20px; 
+        padding:15px; 
+        background:#f8f9fa; 
+        border-radius:8px; 
+        border-left:4px solid #2ecc71;
+    }
+    .product-management h3 { 
+        color:#2c3e50; 
+        font-size:16px; 
+        margin-bottom:10px; 
+    }
+    .product-management .add-row { 
+        display:flex; 
+        gap:10px; 
+        flex-wrap:wrap; 
+        align-items:center; 
+    }
+    .product-management .add-row input { 
+        padding:6px 10px; 
+        border:1px solid #ddd; 
+        border-radius:5px; 
+        font-size:14px; 
+    }
+    .product-management .add-row input[type="text"] { width:200px; }
+    .product-management .add-row input[type="number"] { width:100px; }
+
+    .confirm-delete-product { 
+        margin-top:8px; 
+        padding:10px; 
+        background:#fdf2f2; 
+        border:1px solid #f5c6cb; 
+        border-radius:6px; 
+        display:flex; 
+        align-items:center; 
+        gap:10px; 
+        flex-wrap:wrap; 
+        font-size:13px; 
+        color:#842029; 
+    }
+
+    @media (max-width:768px) {
+        .dashboard { grid-template-columns:1fr; }
+        .grid-3 { grid-template-columns:1fr; }
+        .product-management .add-row input[type="text"] { width:100%; }
+        .product-management .add-row input[type="number"] { width:80px; }
+        .product-controls input { width:60px; }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>✂️ Barbería - Sistema de Gestión</h1>
+
+    <div class="tabs">
+        <button class="tab active" data-tab="dashboard">📊 Dashboard</button>
+        <button class="tab" data-tab="attend">👤 Atender Cliente</button>
+        <button class="tab" data-tab="products">🧴 Productos</button>
+        <button class="tab" data-tab="reports">📈 Reportes</button>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="tab-dashboard" class="tab-content active">
+        <div class="dashboard">
+            <div class="card">
+                <h2>👨‍🦱 Barberos</h2>
+                <div id="barberList" class="barber-list"></div>
+                <div class="add-product-row" style="margin-top:14px;">
+                    <input type="text" id="newBarberName" placeholder="Nombre del nuevo barbero">
+                    <button class="btn btn-success" id="addBarberBtn">➕ Agregar barbero</button>
+                </div>
+            </div>
+            <div class="card">
+                <h2>⏳ Clientes en Espera</h2>
+                <div id="waitingList" class="waiting-list"></div>
+                <div id="addClientControls-dash" style="margin-top:14px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Atender Cliente -->
+    <div id="tab-attend" class="tab-content">
+        <div class="card">
+            <!-- Configuración del precio del servicio -->
+            <div class="service-config">
+                <label for="servicePriceInput">💰 Precio del servicio:</label>
+                <input type="number" id="servicePriceInput" value="50" min="1" step="1">
+                <button class="btn btn-sm" id="updateServicePriceBtn">Actualizar precio</button>
+                <span style="font-size:13px; color:#7f8c8d;">| Los productos van a la cuenta general</span>
+            </div>
+
+            <div class="barber-top" style="margin-bottom:15px;">
+                <h2 style="border:none; margin:0; padding:0;">👤 Trabajos en curso y pendientes de cobro</h2>
+                <div id="addClientControls-attend"></div>
+            </div>
+            <div id="attendList" class="barber-list"></div>
+        </div>
+    </div>
+
+    <!-- Productos -->
+    <div id="tab-products" class="tab-content">
+        <div class="card">
+            <h2>📦 Gestión de Inventario</h2>
+            
+            <!-- Agregar nuevo producto -->
+            <div class="product-management">
+                <h3>➕ Agregar nuevo producto</h3>
+                <div class="add-row">
+                    <input type="text" id="newProductName" placeholder="Nombre del producto">
+                    <input type="number" id="newProductPrice" placeholder="Precio" min="1" step="0.5">
+                    <input type="number" id="newProductStock" placeholder="Stock inicial" min="0" step="1">
+                    <button class="btn btn-success" id="addProductBtn">Agregar producto</button>
+                </div>
+            </div>
+
+            <!-- Lista de productos con controles -->
+            <div id="inventoryList"></div>
+            <p style="color:#7f8c8d; font-size:13px; margin-top:10px;">
+                Los productos se venden desde la pestaña "Atender Cliente", una vez que el trabajo está finalizado.
+            </p>
+        </div>
+    </div>
+
+    <!-- Reportes -->
+    <div id="tab-reports" class="tab-content">
+        <div class="grid-3">
+            <div class="report-card">
+                <h3>📊 Reporte General</h3>
+                <div id="generalReport"></div>
+            </div>
+            <div class="report-card">
+                <h3>👨‍🦱 Reporte por Barbero</h3>
+                <div id="barberReport"></div>
+            </div>
+            <div class="report-card">
+                <h3>📜 Historial de Trabajos</h3>
+                <div id="historyList"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<script>
+    // ============ DATA ============
+    let barbers = [
+        { id: 1, name: 'Carlos', status: 'disponible', client: null, pendingWork: null, history: [], earnings: 0 },
+        { id: 2, name: 'Miguel', status: 'disponible', client: null, pendingWork: null, history: [], earnings: 0 },
+        { id: 3, name: 'Ana',    status: 'disponible', client: null, pendingWork: null, history: [], earnings: 0 }
+    ];
+
+    let waitingQueue = [];
+    let clientCounter = 0;
+    let SERVICE_PRICE = 50;
+    let generalEarnings = 0;
+    let nextProductId = 6;
+
+    let products = [
+        { id: 1, name: 'Shampoo Profesional', price: 15, stock: 10 },
+        { id: 2, name: 'Acondicionador',      price: 12, stock: 8 },
+        { id: 3, name: 'Cera para Cabello',   price: 20, stock: 5 },
+        { id: 4, name: 'Navaja de Afeitar',   price: 25, stock: 3 },
+        { id: 5, name: 'Gel Fijador',         price: 18, stock: 6 }
+    ];
+
+    let workHistory = [];
+    let editingBarberId = null;
+    let confirmingDeleteId = null;
+    let nextBarberId = 4;
+    let editingProductId = null;
+    let confirmingDeleteProductId = null;
+
+    // ============ TOASTS ============
+    function showToast(message, type) {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type || 'info'}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 3200);
+    }
+
+    // ============ MODIFICAR PRECIO DEL SERVICIO ============
+    function updateServicePrice() {
+        const input = document.getElementById('servicePriceInput');
+        const newPrice = parseFloat(input.value);
+        if (isNaN(newPrice) || newPrice <= 0) {
+            showToast('Ingresá un precio válido (mayor a 0)', 'warning');
+            return;
+        }
+        SERVICE_PRICE = newPrice;
+        showToast(`Precio del servicio actualizado a $${SERVICE_PRICE}`, 'success');
+        renderAll();
+    }
+
+    // ============ GESTIÓN DE PRODUCTOS ============
+    function addProduct() {
+        const nameInput = document.getElementById('newProductName');
+        const priceInput = document.getElementById('newProductPrice');
+        const stockInput = document.getElementById('newProductStock');
+
+        const name = nameInput.value.trim();
+        const price = parseFloat(priceInput.value);
+        const stock = parseInt(stockInput.value);
+
+        if (!name) {
+            showToast('Ingresá un nombre para el producto', 'warning');
+            return;
+        }
+        if (isNaN(price) || price <= 0) {
+            showToast('Ingresá un precio válido (mayor a 0)', 'warning');
+            return;
+        }
+        if (isNaN(stock) || stock < 0) {
+            showToast('Ingresá un stock válido (0 o más)', 'warning');
+            return;
+        }
+
+        products.push({ id: nextProductId++, name, price, stock });
+        nameInput.value = '';
+        priceInput.value = '';
+        stockInput.value = '';
+        showToast(`Producto "${name}" agregado exitosamente`, 'success');
+        renderAll();
+    }
+
+    function updateProductStock(productId, newStock) {
+        const product = products.find(p => p.id === productId);
+        if (!product) return;
+        const stock = parseInt(newStock);
+        if (isNaN(stock) || stock < 0) {
+            showToast('Stock inválido', 'warning');
+            return;
+        }
+        product.stock = stock;
+        showToast(`Stock de "${product.name}" actualizado a ${stock}`, 'success');
+        renderAll();
+    }
+
+    function updateProductPrice(productId, newPrice) {
+        const product = products.find(p => p.id === productId);
+        if (!product) return;
+        const price = parseFloat(newPrice);
+        if (isNaN(price) || price <= 0) {
+            showToast('Precio inválido', 'warning');
+            return;
+        }
+        product.price = price;
+        showToast(`Precio de "${product.name}" actualizado a $${price}`, 'success');
+        renderAll();
+    }
+
+    function askRemoveProduct(productId) {
+        const product = products.find(p => p.id === productId);
+        if (!product) return;
+        confirmingDeleteProductId = productId;
+        renderAll();
+    }
+
+    function cancelRemoveProduct() {
+        confirmingDeleteProductId = null;
+        renderAll();
+    }
+
+    function confirmRemoveProduct(productId) {
+        const product = products.find(p => p.id === productId);
+        products = products.filter(p => p.id !== productId);
+        confirmingDeleteProductId = null;
+        showToast(`Producto "${product ? product.name : ''}" eliminado`, 'success');
+        renderAll();
+    }
+
+    // ============ ALTA / BAJA DE BARBEROS ============
+    function addBarber() {
+        const input = document.getElementById('newBarberName');
+        const name = input.value.trim();
+        if (!name) {
+            showToast('Ingresá un nombre para el nuevo barbero', 'warning');
+            return;
+        }
+        barbers.push({ id: nextBarberId++, name, status: 'disponible', client: null, pendingWork: null, history: [], earnings: 0 });
+        input.value = '';
+        showToast(`${name} fue agregado al equipo`, 'success');
+        renderAll();
+    }
+
+    function askRemoveBarber(barberId) {
+        const barber = barbers.find(b => b.id === barberId);
+        if (!barber) return;
+
+        if (barber.status !== 'disponible') {
+            showToast(`No se puede eliminar a ${barber.name}: tiene un trabajo en curso o pendiente de cobro.`, 'error');
+            return;
+        }
+        if (barbers.length === 1) {
+            showToast('Debe quedar al menos un barbero.', 'error');
+            return;
+        }
+        confirmingDeleteId = barberId;
+        renderAll();
+    }
+
+    function cancelRemoveBarber() {
+        confirmingDeleteId = null;
+        renderAll();
+    }
+
+    function confirmRemoveBarber(barberId) {
+        const barber = barbers.find(b => b.id === barberId);
+        barbers = barbers.filter(b => b.id !== barberId);
+        confirmingDeleteId = null;
+        showToast(`${barber ? barber.name : 'El barbero'} fue eliminado`, 'success');
+        renderAll();
+    }
+
+    // ============ TABS ============
+    function showTab(tabName, btnEl) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+        document.getElementById(`tab-${tabName}`).classList.add('active');
+        btnEl.classList.add('active');
+        renderAll();
+    }
+
+    // ============ CLIENTES ============
+    function assignToBarber(barber, clientLabel) {
+        barber.status = 'ocupado';
+        barber.client = clientLabel;
+    }
+
+    function addClientToBarber(barberId) {
+        const barber = barbers.find(b => b.id === parseInt(barberId));
+        if (!barber || barber.status !== 'disponible') {
+            showToast('Ese barbero ya no está disponible, elegí otro.', 'error');
+            renderAll();
+            return;
+        }
+        clientCounter++;
+        assignToBarber(barber, `Cliente #${clientCounter}`);
+        renderAll();
+    }
+
+    function addClientToQueue() {
+        clientCounter++;
+        waitingQueue.push(`Cliente #${clientCounter}`);
+        renderAll();
+    }
+
+    function renderAddClientControls(suffix) {
+        const container = document.getElementById(`addClientControls-${suffix}`);
+        const available = barbers.filter(b => b.status === 'disponible');
+
+        if (available.length === 0) {
+            container.innerHTML = `<button class="btn btn-warning" data-action="queue">➕ Agregar cliente a la cola de espera</button>`;
+            const btn = container.querySelector('[data-action="queue"]');
+            if (btn) btn.addEventListener('click', addClientToQueue);
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="add-product-row">
+                <select id="barberChoice-${suffix}">
+                    ${available.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
+                </select>
+                <button class="btn btn-success" data-action="assign">➕ Asignar cliente</button>
+            </div>
+        `;
+        const btn = container.querySelector('[data-action="assign"]');
+        if (btn) {
+            btn.addEventListener('click', () => {
+                addClientToBarber(document.getElementById(`barberChoice-${suffix}`).value);
+            });
+        }
+    }
+
+    // ============ FINALIZAR TRABAJO ============
+    function finishWork(barberId, satisfied) {
+        const barber = barbers.find(b => b.id === barberId);
+        if (!barber || barber.status !== 'ocupado') return;
+
+        if (!satisfied) {
+            showToast(`${barber.client} no quedó satisfecho. El trabajo sigue en curso.`, 'warning');
+            return;
+        }
+
+        barber.status = 'pendiente_cobro';
+        barber.pendingWork = { servicePrice: SERVICE_PRICE, products: [] };
+        renderAll();
+    }
+
+    // ============ VENTA DE PRODUCTOS ============
+    function addProductToPending(barberId, productId, quantity) {
+        const barber = barbers.find(b => b.id === barberId);
+        if (!barber || barber.status !== 'pendiente_cobro') return;
+
+        const product = products.find(p => p.id === productId);
+        if (!product) return;
+
+        if (!quantity || quantity < 1) {
+            showToast('Ingresá una cantidad válida', 'warning');
+            return;
+        }
+
+        if (product.stock < quantity) {
+            showToast(`Stock insuficiente de "${product.name}". Disponible: ${product.stock}`, 'error');
+            return;
+        }
+
+        product.stock -= quantity;
+        barber.pendingWork.products.push({ name: product.name, price: product.price, quantity });
+        showToast(`Agregado ${quantity}x "${product.name}" al trabajo`, 'success');
+        renderAll();
+    }
+
+    // ============ COBRAR Y CERRAR ============
+    function closeWork(barberId) {
+        const barber = barbers.find(b => b.id === barberId);
+        if (!barber || barber.status !== 'pendiente_cobro') return;
+
+        const productsTotal = barber.pendingWork.products.reduce((sum, p) => sum + p.price * p.quantity, 0);
+        const total = barber.pendingWork.servicePrice + productsTotal;
+
+        const work = {
+            client: barber.client,
+            barber: barber.name,
+            date: new Date().toLocaleString(),
+            servicePrice: barber.pendingWork.servicePrice,
+            products: barber.pendingWork.products,
+            total
+        };
+
+        barber.history.push(work);
+        workHistory.push(work);
+        
+        // El barbero gana solo por el servicio
+        barber.earnings += barber.pendingWork.servicePrice;
+        // Los productos van a la cuenta general
+        generalEarnings += productsTotal;
+
+        barber.status = 'disponible';
+        barber.client = null;
+        barber.pendingWork = null;
+
+        if (waitingQueue.length > 0) {
+            const nextClient = waitingQueue.shift();
+            assignToBarber(barber, nextClient);
+        }
+
+        showToast(`Cobro registrado. Total: $${total} (Servicio: $${barber.pendingWork?.servicePrice || 0} + Productos: $${productsTotal})`, 'success');
+        renderAll();
+    }
+
+    // ============ RENOMBRAR BARBERO ============
+    function startEditBarber(barberId) {
+        editingBarberId = barberId;
+        renderAll();
+    }
+
+    function saveBarberName(barberId, newName) {
+        const name = newName.trim();
+        if (!name) {
+            showToast('El nombre no puede estar vacío', 'warning');
+            return;
+        }
+        const barber = barbers.find(b => b.id === barberId);
+        barber.name = name;
+        editingBarberId = null;
+        renderAll();
+    }
+
+    // ============ RENDER ============
+    function renderAll() {
+        renderBarbers();
+        renderWaitingList();
+        renderAddClientControls('dash');
+        renderAddClientControls('attend');
+        renderAttendList();
+        renderInventory();
+        renderReports();
+        
+        // Actualizar el valor del input de precio del servicio
+        const priceInput = document.getElementById('servicePriceInput');
+        if (priceInput) priceInput.value = SERVICE_PRICE;
+    }
+
+    // ============ RENDER FUNCTIONS ============
+    function statusLabel(barber) {
+        if (barber.status === 'disponible') return '🟢 Disponible';
+        if (barber.status === 'ocupado') return '🔴 Ocupado';
+        return '🟠 Pendiente de cobro';
+    }
+
+    function statusClass(barber) {
+        if (barber.status === 'ocupado') return 'busy';
+        if (barber.status === 'pendiente_cobro') return 'pending';
+        return '';
+    }
+
+    function renderBarberName(barber) {
+        if (editingBarberId === barber.id) {
+            return `
+                <div class="barber-name-group">
+                    <input type="text" id="renameInput-${barber.id}" value="${barber.name}">
+                    <button class="icon-btn" data-action="save-name" data-id="${barber.id}" title="Guardar">💾</button>
+                </div>
+            `;
+        }
+        return `
+            <div class="barber-name-group">
+                <strong>${barber.name}</strong>
+                <button class="icon-btn" data-action="edit-name" data-id="${barber.id}" title="Editar nombre">✏️</button>
+                <button class="icon-btn" data-action="delete-barber" data-id="${barber.id}" title="Eliminar barbero">🗑️</button>
+            </div>
+        `;
+    }
+
+    function renderBarbers() {
+        const container = document.getElementById('barberList');
+        if (!container) return;
+        container.innerHTML = barbers.map(barber => `
+            <div class="barber-item ${statusClass(barber)}">
+                <div class="barber-top">
+                    ${renderBarberName(barber)}
+                    <div>
+                        <span class="status">${statusLabel(barber)}</span>
+                        <span style="margin-left:10px;">💰 $${barber.earnings}</span>
+                    </div>
+                </div>
+                ${barber.client ? `<div style="margin-top:6px; font-size:13px; color:#555;">Cliente actual: ${barber.client}</div>` : ''}
+                ${confirmingDeleteId === barber.id ? `
+                    <div class="confirm-box">
+                        <span>¿Eliminar a ${barber.name}? Se pierde su historial.</span>
+                        <button class="btn btn-danger btn-sm" data-action="confirm-delete" data-id="${barber.id}">Sí, eliminar</button>
+                        <button class="btn btn-sm" data-action="cancel-delete">Cancelar</button>
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
+
+        // Event listeners
+        container.querySelectorAll('[data-action="edit-name"]').forEach(btn => {
+            btn.addEventListener('click', () => startEditBarber(parseInt(btn.dataset.id)));
+        });
+        container.querySelectorAll('[data-action="save-name"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = parseInt(btn.dataset.id);
+                saveBarberName(id, document.getElementById(`renameInput-${id}`).value);
+            });
+        });
+        container.querySelectorAll('[data-action="delete-barber"]').forEach(btn => {
+            btn.addEventListener('click', () => askRemoveBarber(parseInt(btn.dataset.id)));
+        });
+        container.querySelectorAll('[data-action="confirm-delete"]').forEach(btn => {
+            btn.addEventListener('click', () => confirmRemoveBarber(parseInt(btn.dataset.id)));
+        });
+        container.querySelectorAll('[data-action="cancel-delete"]').forEach(btn => {
+            btn.addEventListener('click', cancelRemoveBarber);
+        });
+    }
+
+    function renderWaitingList() {
+        const container = document.getElementById('waitingList');
+        if (!container) return;
+        if (waitingQueue.length === 0) {
+            container.innerHTML = '<p class="empty-msg">No hay clientes en espera</p>';
+            return;
+        }
+        container.innerHTML = waitingQueue.map((client, index) => `
+            <div class="cliente-item">
+                <span>${index + 1}. ${client}</span>
+                <span style="font-size:12px; color:#e67e22;">⏳ En espera</span>
+            </div>
+        `).join('');
+    }
+
+    function renderAttendList() {
+        const container = document.getElementById('attendList');
+        if (!container) return;
+        const activeBarbers = barbers.filter(b => b.status !== 'disponible');
+
+        if (activeBarbers.length === 0) {
+            container.innerHTML = '<p class="empty-msg">No hay trabajos en curso ni pendientes de cobro. Elegí un barbero arriba para empezar.</p>';
+            return;
+        }
+
+        container.innerHTML = activeBarbers.map(barber => {
+            if (barber.status === 'ocupado') {
+                return `
+                    <div class="barber-item busy">
+                        <div class="barber-top">
+                            <strong>${barber.name}</strong>
+                            <span class="status">🔴 Ocupado</span>
+                        </div>
+                        <div style="margin-top:6px; font-size:13px; color:#555;">Atendiendo a: ${barber.client}</div>
+                        <div class="action-row">
+                            <button class="btn btn-success btn-sm" data-action="finish-ok" data-id="${barber.id}">✅ Cliente satisfecho</button>
+                            <button class="btn btn-danger btn-sm" data-action="finish-no" data-id="${barber.id}">❌ No satisfecho</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const availableProducts = products.filter(p => p.stock > 0);
+            const productsTotal = barber.pendingWork.products.reduce((sum, p) => sum + p.price * p.quantity, 0);
+            const total = barber.pendingWork.servicePrice + productsTotal;
+
+            return `
+                <div class="barber-item pending">
+                    <div class="barber-top">
+                        <strong>${barber.name}</strong>
+                        <span class="status">🟠 Pendiente de cobro</span>
+                    </div>
+                    <div style="margin-top:6px; font-size:13px; color:#555;">Cliente: ${barber.client}</div>
+
+                    <div class="pending-box">
+                        <div class="pending-line"><span>Servicio ($${barber.pendingWork.servicePrice})</span><span>$${barber.pendingWork.servicePrice}</span></div>
+                        ${barber.pendingWork.products.map(p => `
+                            <div class="pending-line"><span>${p.quantity}x ${p.name}</span><span>$${p.price * p.quantity}</span></div>
+                        `).join('')}
+                        <div class="pending-line pending-total"><span>Total</span><span>$${total}</span></div>
+                        <div style="font-size:11px; color:#7f8c8d; margin-top:4px;">* Los productos van a la cuenta general</div>
+                    </div>
+
+                    ${availableProducts.length > 0 ? `
+                        <div class="add-product-row">
+                            <select id="productSelect-${barber.id}">
+                                ${availableProducts.map(p => `<option value="${p.id}">${p.name} - $${p.price} (Stock: ${p.stock})</option>`).join('')}
+                            </select>
+                            <input type="number" id="productQty-${barber.id}" min="1" value="1" placeholder="Cant.">
+                            <button class="btn btn-sm" data-action="add-product" data-id="${barber.id}">➕ Agregar producto</button>
+                        </div>
+                    ` : `
+                        <p class="empty-msg" style="margin-top:8px;">No hay productos con stock disponible.</p>
+                    `}
+
+                    <div class="action-row">
+                        <button class="btn btn-success" data-action="close-work" data-id="${barber.id}">💵 Cobrar y cerrar</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Event listeners
+        container.querySelectorAll('[data-action="finish-ok"]').forEach(btn => {
+            btn.addEventListener('click', () => finishWork(parseInt(btn.dataset.id), true));
+        });
+        container.querySelectorAll('[data-action="finish-no"]').forEach(btn => {
+            btn.addEventListener('click', () => finishWork(parseInt(btn.dataset.id), false));
+        });
+        container.querySelectorAll('[data-action="add-product"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = parseInt(btn.dataset.id);
+                const select = document.getElementById(`productSelect-${id}`);
+                const qtyInput = document.getElementById(`productQty-${id}`);
+                const productId = parseInt(select.value);
+                const quantity = parseInt(qtyInput.value);
+                addProductToPending(id, productId, quantity);
+            });
+        });
+        container.querySelectorAll('[data-action="close-work"]').forEach(btn => {
+            btn.addEventListener('click', () => closeWork(parseInt(btn.dataset.id)));
+        });
+    }
+
+    // ============ INVENTARIO ============
+    function renderInventory() {
+        const container = document.getElementById('inventoryList');
+        if (!container) return;
+        if (products.length === 0) {
+            container.innerHTML = '<p class="empty-msg">No hay productos cargados.</p>';
+            return;
+        }
+        container.innerHTML = products.map(product => `
+            <div class="product-item">
+                <div>
+                    <strong>${product.name}</strong>
+                    <div style="font-size:12px; color:#7f8c8d;">$${product.price}</div>
+                </div>
+                <div class="product-controls">
+                    <span class="stock ${product.stock <= 2 ? 'low' : ''}">Stock: ${product.stock}</span>
+                    <input type="number" id="stockInput-${product.id}" value="${product.stock}" min="0">
+                    <button class="btn btn-sm" data-action="update-stock" data-id="${product.id}">Actualizar stock</button>
+                    <input type="number" id="priceInput-${product.id}" value="${product.price}" min="0.5" step="0.5">
+                    <button class="btn btn-sm" data-action="update-price" data-id="${product.id}">Actualizar precio</button>
+                    <button class="btn btn-danger btn-sm" data-action="delete-product" data-id="${product.id}">🗑️</button>
+                </div>
+                ${confirmingDeleteProductId === product.id ? `
+                    <div class="confirm-delete-product">
+                        <span>¿Eliminar "${product.name}"? Esta acción no se puede deshacer.</span>
+                        <button class="btn btn-danger btn-sm" data-action="confirm-delete-product" data-id="${product.id}">Sí, eliminar</button>
+                        <button class="btn btn-sm" data-action="cancel-delete-product">Cancelar</button>
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
+
+        container.querySelectorAll('[data-action="update-stock"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = parseInt(btn.dataset.id);
+                updateProductStock(id, document.getElementById(`stockInput-${id}`).value);
+            });
+        });
+        container.querySelectorAll('[data-action="update-price"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = parseInt(btn.dataset.id);
+                updateProductPrice(id, document.getElementById(`priceInput-${id}`).value);
+            });
+        });
+        container.querySelectorAll('[data-action="delete-product"]').forEach(btn => {
+            btn.addEventListener('click', () => askRemoveProduct(parseInt(btn.dataset.id)));
+        });
+        container.querySelectorAll('[data-action="confirm-delete-product"]').forEach(btn => {
+            btn.addEventListener('click', () => confirmRemoveProduct(parseInt(btn.dataset.id)));
+        });
+        container.querySelectorAll('[data-action="cancel-delete-product"]').forEach(btn => {
+            btn.addEventListener('click', cancelRemoveProduct);
+        });
+    }
+
+    // ============ REPORTES ============
+    function renderReports() {
+        const generalContainer = document.getElementById('generalReport');
+        const barberContainer = document.getElementById('barberReport');
+        const historyContainer = document.getElementById('historyList');
+        if (!generalContainer || !barberContainer || !historyContainer) return;
+
+        const totalServicios = workHistory.reduce((sum, w) => sum + w.servicePrice, 0);
+        const totalProductos = workHistory.reduce((sum, w) => sum + w.products.reduce((s, p) => s + p.price * p.quantity, 0), 0);
+        const totalGeneral = totalServicios + totalProductos;
+
+        generalContainer.innerHTML = `
+            <div class="report-item"><span>Trabajos realizados</span><span>${workHistory.length}</span></div>
+            <div class="report-item"><span>Total por servicios</span><span>$${totalServicios}</span></div>
+            <div class="report-item"><span>Total por productos</span><span>$${totalProductos}</span></div>
+            <div class="report-item"><span>Ingresos totales</span><span>$${totalGeneral}</span></div>
+            <div class="report-item"><span>Caja general (productos)</span><span>$${generalEarnings}</span></div>
+        `;
+
+        barberContainer.innerHTML = barbers.length > 0 ? barbers.map(b => `
+            <div class="report-item"><span>${b.name}</span><span>$${b.earnings} (${b.history.length} trabajos)</span></div>
+        `).join('') : '<p class="empty-msg">No hay barberos.</p>';
+
+        if (workHistory.length === 0) {
+            historyContainer.innerHTML = '<p class="empty-msg">Todavía no hay trabajos registrados.</p>';
+        } else {
+            historyContainer.innerHTML = workHistory.slice().reverse().map(w => `
+                <div class="history-item">
+                    <strong>${w.client}</strong> con ${w.barber} — $${w.total}<br>
+                    <span style="color:#7f8c8d;">${w.date}</span>
+                </div>
+            `).join('');
+        }
+    }
+
+    // ============ INICIALIZACIÓN ============
+    document.querySelectorAll('.tab').forEach(btn => {
+        btn.addEventListener('click', () => showTab(btn.dataset.tab, btn));
+    });
+    document.getElementById('addBarberBtn').addEventListener('click', addBarber);
+    document.getElementById('addProductBtn').addEventListener('click', addProduct);
+    document.getElementById('updateServicePriceBtn').addEventListener('click', updateServicePrice);
+
+    renderAll();
+</script>
+</body>
+</html>
